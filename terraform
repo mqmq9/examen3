@@ -1,0 +1,49 @@
+provider "aws" {
+  region = "us-east-1"  # Cambia a la región que prefieras
+}
+
+resource "aws_ecs_cluster" "mi_cluster" {
+  name = "mi-cluster"
+}
+
+resource "aws_ecs_task_definition" "mi_task" {
+  family                   = "mi-task"
+  network_mode             = "bridge"
+  
+  container_definitions = jsonencode([{
+    name      = "mi-contenedor"
+    image     = "mi_usuario/mi_pagina_web:latest"  # Cambia esto a tu imagen de Docker
+    memory    = 512
+    cpu       = 256
+    essential = true
+    portMappings = [{
+      containerPort = 80
+      hostPort      = 80
+      protocol      = "tcp"
+    }]
+  }])
+}
+
+resource "aws_ecs_service" "mi_servicio" {
+  name            = "mi-servicio"
+  cluster         = aws_ecs_cluster.mi_cluster.id
+  task_definition = aws_ecs_task_definition.mi_task.arn
+  desired_count   = 1
+
+  launch_type = "EC2"
+  
+  network_configuration {
+    subnets          = ["subnet-0123456789abcdef0"]  # Cambia a tu subnet
+    security_groups  = ["sg-0123456789abcdef0"]     # Cambia a tu grupo de seguridad
+    assign_public_ip = true
+  }
+}
+
+resource "aws_instance" "mi_instancia" {
+  ami           = "ami-0c55b159cbfafe01e"  # Cambia a una AMI compatible con ECS
+  instance_type = "t2.micro"
+  
+  tags = {
+    Name = "mi-instancia-ecs"
+  }
+}
